@@ -9,6 +9,24 @@ const formatRupiah = (n) => {
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
+function playNotifSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.2, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.25);
+  } catch (e) {}
+}
+
 const defaultData = {
   cash: 0,
   pockets: [
@@ -104,12 +122,14 @@ export default function App() {
           cash: d.cash + remainder,
           transactions: [{ id: Date.now().toString(), type: "masuk", amount: amt, note: note || "Pemasukan", date: todayStr(), split: true }, ...d.transactions],
         }));
+        playNotifSound();
       } else {
         setData((d) => ({
           ...d,
           cash: d.cash + amt,
           transactions: [{ id: Date.now().toString(), type: "masuk", amount: amt, note: note || "Pemasukan", date: todayStr(), split: false }, ...d.transactions],
         }));
+        playNotifSound();
       }
     } else {
       const fromCash = pocketId === "" || pocketId === "cash";
@@ -120,6 +140,7 @@ export default function App() {
           cash: d.cash - amt,
           transactions: [{ id: Date.now().toString(), type: "keluar", amount: amt, note: note || "Pengeluaran", date: todayStr(), source: "cash" }, ...d.transactions],
         }));
+        playNotifSound();
       } else {
         const pocket = pockets.find((p) => p.id === pocketId);
         if (!pocket || amt > pocket.balance) { setError("Saldo kantong tidak cukup."); return; }
@@ -128,6 +149,7 @@ export default function App() {
           pockets: d.pockets.map((p) => p.id === pocketId ? { ...p, balance: p.balance - amt } : p),
           transactions: [{ id: Date.now().toString(), type: "keluar", amount: amt, note: note || "Pengeluaran", date: todayStr(), source: pocketId }, ...d.transactions],
         }));
+        playNotifSound();
       }
     }
     resetForm();
