@@ -199,10 +199,10 @@ export default function App() {
         {/* Form */}
         <div style={{ ...s.card, marginBottom: 24, display: "block" }}>
           <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-            <button onClick={() => setFormType("masuk")} style={{ ...s.typeBtn, ...(formType === "masuk" ? s.typeBtnActive("#16a34a") : s.typeBtnInactive) }}>
+            <button onClick={() => setFormType("masuk")} style={{ ...s.typeBtn, ...(formType === "masuk" ? s.typeBtnActive("#705D40") : s.typeBtnInactive) }}>
               <IconUp /> Masuk
             </button>
-            <button onClick={() => setFormType("keluar")} style={{ ...s.typeBtn, ...(formType === "keluar" ? s.typeBtnActive("#dc2626") : s.typeBtnInactive) }}>
+            <button onClick={() => setFormType("keluar")} style={{ ...s.typeBtn, ...(formType === "keluar" ? s.typeBtnActive("#705D40") : s.typeBtnInactive) }}>
               <IconDown /> Keluar
             </button>
           </div>
@@ -319,10 +319,10 @@ const styles = {
   sectionTitle: { fontSize: 13, fontWeight: 500, color: "#44403c" },
   rowBetween: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
   input: { border: "1px solid #e7e5e4", borderRadius: 8, padding: "8px 12px", fontSize: 13, outline: "none", background: "white" },
-  typeBtn: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 0", borderRadius: 8, fontSize: 13, fontWeight: 500, border: "none", cursor: "pointer" },
+  typeBtn: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 0", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer", fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
   typeBtnActive: (color) => ({ background: color, color: "white" }),
   typeBtnInactive: { background: "#f5f5f4", color: "#57534e" },
-  submitBtn: { width: "100%", background: "#1c1917", color: "white", border: "none", borderRadius: 8, padding: "10px 0", fontSize: 13, fontWeight: 500, cursor: "pointer" },
+  submitBtn: { width: "100%", background: "#705D40", color: "white", border: "none", borderRadius: 8, padding: "10px 0", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
   txRow: { background: "white", borderRadius: 8, border: "1px solid #e7e5e4", padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" },
   deleteBtn: { background: "none", border: "none", cursor: "pointer", color: "#a8a29e", padding: 2, display: "flex" },
   addPocketBtn: { width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px dashed #d6d3d1", borderRadius: 8, padding: "8px 0", fontSize: 13, color: "#57534e", background: "white", cursor: "pointer" },
