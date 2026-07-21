@@ -86,6 +86,7 @@ export default function App() {
   const [pocketId, setPocketId] = useState("");
   const [splitMode, setSplitMode] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
   const [error, setError] = useState("");
   const audioCtxRef = useRef(null);
 
@@ -176,6 +177,15 @@ export default function App() {
       const pocket = d.pockets.find((p) => p.id === id);
       return { ...d, cash: d.cash + (Number(pocket?.balance) || 0), pockets: d.pockets.filter((p) => p.id !== id) };
     });
+  }
+  function handleResetAll() {
+    setData((d) => ({
+      cash: 0,
+      pockets: d.pockets.map((p) => ({ ...p, balance: 0 })),
+      transactions: [],
+    }));
+    setConfirmReset(false);
+    setShowSettings(false);
   }
   function deleteTransaction(id) {
     setData((d) => ({ ...d, transactions: d.transactions.filter((tx) => tx.id !== id) }));
@@ -329,6 +339,31 @@ export default function App() {
               Total: {totalPct}%. {totalPct === 100 ? "Pas, semua pemasukan terbagi habis." : totalPct < 100 ? `Sisa ${100 - totalPct}% masuk ke kas tunai.` : "Melebihi 100%, akan dinormalkan otomatis."}
             </div>
             <button onClick={() => setShowSettings(false)} style={{ ...s.submitBtn, marginTop: 16 }}>Selesai</button>
+
+            <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid #e7e5e4" }}>
+              {!confirmReset ? (
+                <button
+                  onClick={() => setConfirmReset(true)}
+                  style={{ width: "100%", background: "white", color: "#dc2626", border: "1px solid #dc2626", borderRadius: 8, padding: "10px 0", fontSize: 13, fontWeight: 500, cursor: "pointer" }}
+                >
+                  Reset semua data ke Rp0
+                </button>
+              ) : (
+                <div>
+                  <p style={{ fontSize: 12, color: "#dc2626", marginBottom: 8, textAlign: "center" }}>
+                    Yakin? Semua saldo dan riwayat transaksi akan dihapus permanen dan tidak bisa dikembalikan.
+                  </p>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={() => setConfirmReset(false)} style={{ flex: 1, background: "#f5f5f4", color: "#57534e", border: "none", borderRadius: 8, padding: "10px 0", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
+                      Batal
+                    </button>
+                    <button onClick={handleResetAll} style={{ flex: 1, background: "#dc2626", color: "white", border: "none", borderRadius: 8, padding: "10px 0", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
+                      Ya, Reset
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
