@@ -306,7 +306,7 @@ export default function App() {
 }
 
 const styles = {
-  page: { minHeight: "100vh", background: "#fafaf9", padding: "0 0 40px" },
+  page: { minHeight: "100vh", background: "#E3D7CA", padding: "0 0 40px" },
   container: { maxWidth: 640, margin: "0 auto", padding: "32px 16px" },
   header: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 },
   title: { fontSize: 20, fontWeight: 600, letterSpacing: "-0.02em" },
