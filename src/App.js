@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 const STORAGE_KEY = "keuangan_data_v1";
 
@@ -9,10 +9,10 @@ const formatRupiah = (n) => {
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
-function playNotifSound() {
+function playNotifSound(ctx) {
   try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    const ctx = new AudioCtx();
+    if (!ctx) return;
+    if (ctx.state === "suspended") ctx.resume();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);
@@ -20,11 +20,13 @@ function playNotifSound() {
     osc.type = "sine";
     osc.frequency.setValueAtTime(880, ctx.currentTime);
     osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
     osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.25);
-  } catch (e) {}
+    osc.stop(ctx.currentTime + 0.3);
+  } catch (e) {
+    console.warn("Gagal memutar suara notifikasi:", e);
+  }
 }
 
 const defaultData = {
@@ -85,6 +87,7 @@ export default function App() {
   const [splitMode, setSplitMode] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
   const [error, setError] = useState("");
+  const audioCtxRef = useRef(null);
 
   // Simpan ke localStorage setiap kali data berubah
   useEffect(() => {
@@ -99,6 +102,13 @@ export default function App() {
   function resetForm() { setAmount(""); setNote(""); setPocketId(""); setError(""); }
 
   function handleAddTransaction() {
+    if (!audioCtxRef.current) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) audioCtxRef.current = new AudioCtx();
+    }
+    if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
+      audioCtxRef.current.resume();
+    }
     const amt = parseFloat(amount);
     if (!Number.isFinite(amt) || amt <= 0) {
       setError("Masukkan jumlah yang valid (lebih dari 0).");
@@ -122,14 +132,14 @@ export default function App() {
           cash: d.cash + remainder,
           transactions: [{ id: Date.now().toString(), type: "masuk", amount: amt, note: note || "Pemasukan", date: todayStr(), split: true }, ...d.transactions],
         }));
-        playNotifSound();
+        playNotifSound(audioCtxRef.current);
       } else {
         setData((d) => ({
           ...d,
           cash: d.cash + amt,
           transactions: [{ id: Date.now().toString(), type: "masuk", amount: amt, note: note || "Pemasukan", date: todayStr(), split: false }, ...d.transactions],
         }));
-        playNotifSound();
+        playNotifSound(audioCtxRef.current);
       }
     } else {
       const fromCash = pocketId === "" || pocketId === "cash";
@@ -140,7 +150,7 @@ export default function App() {
           cash: d.cash - amt,
           transactions: [{ id: Date.now().toString(), type: "keluar", amount: amt, note: note || "Pengeluaran", date: todayStr(), source: "cash" }, ...d.transactions],
         }));
-        playNotifSound();
+        playNotifSound(audioCtxRef.current);
       } else {
         const pocket = pockets.find((p) => p.id === pocketId);
         if (!pocket || amt > pocket.balance) { setError("Saldo kantong tidak cukup."); return; }
@@ -149,7 +159,7 @@ export default function App() {
           pockets: d.pockets.map((p) => p.id === pocketId ? { ...p, balance: p.balance - amt } : p),
           transactions: [{ id: Date.now().toString(), type: "keluar", amount: amt, note: note || "Pengeluaran", date: todayStr(), source: pocketId }, ...d.transactions],
         }));
-        playNotifSound();
+        playNotifSound(audioCtxRef.current);
       }
     }
     resetForm();
