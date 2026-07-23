@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 const STORAGE_KEY = "keuangan_data_v1";
 
@@ -8,26 +8,6 @@ const formatRupiah = (n) => {
 };
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
-
-function playNotifSound(ctx) {
-  try {
-    if (!ctx) return;
-    if (ctx.state === "suspended") ctx.resume();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(880, ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.25, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.3);
-  } catch (e) {
-    console.warn("Gagal memutar suara notifikasi:", e);
-  }
-}
 
 const defaultData = {
   cash: 0,
@@ -86,9 +66,7 @@ export default function App() {
   const [pocketId, setPocketId] = useState("");
   const [splitMode, setSplitMode] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
-  const [confirmReset, setConfirmReset] = useState(false);
   const [error, setError] = useState("");
-  const audioCtxRef = useRef(null);
 
   // Simpan ke localStorage setiap kali data berubah
   useEffect(() => {
@@ -103,13 +81,6 @@ export default function App() {
   function resetForm() { setAmount(""); setNote(""); setPocketId(""); setError(""); }
 
   function handleAddTransaction() {
-    if (!audioCtxRef.current) {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (AudioCtx) audioCtxRef.current = new AudioCtx();
-    }
-    if (audioCtxRef.current && audioCtxRef.current.state === "suspended") {
-      audioCtxRef.current.resume();
-    }
     const amt = parseFloat(amount);
     if (!Number.isFinite(amt) || amt <= 0) {
       setError("Masukkan jumlah yang valid (lebih dari 0).");
@@ -133,14 +104,12 @@ export default function App() {
           cash: d.cash + remainder,
           transactions: [{ id: Date.now().toString(), type: "masuk", amount: amt, note: note || "Pemasukan", date: todayStr(), split: true }, ...d.transactions],
         }));
-        playNotifSound(audioCtxRef.current);
       } else {
         setData((d) => ({
           ...d,
           cash: d.cash + amt,
           transactions: [{ id: Date.now().toString(), type: "masuk", amount: amt, note: note || "Pemasukan", date: todayStr(), split: false }, ...d.transactions],
         }));
-        playNotifSound(audioCtxRef.current);
       }
     } else {
       const fromCash = pocketId === "" || pocketId === "cash";
@@ -151,7 +120,6 @@ export default function App() {
           cash: d.cash - amt,
           transactions: [{ id: Date.now().toString(), type: "keluar", amount: amt, note: note || "Pengeluaran", date: todayStr(), source: "cash" }, ...d.transactions],
         }));
-        playNotifSound(audioCtxRef.current);
       } else {
         const pocket = pockets.find((p) => p.id === pocketId);
         if (!pocket || amt > pocket.balance) { setError("Saldo kantong tidak cukup."); return; }
@@ -160,7 +128,6 @@ export default function App() {
           pockets: d.pockets.map((p) => p.id === pocketId ? { ...p, balance: p.balance - amt } : p),
           transactions: [{ id: Date.now().toString(), type: "keluar", amount: amt, note: note || "Pengeluaran", date: todayStr(), source: pocketId }, ...d.transactions],
         }));
-        playNotifSound(audioCtxRef.current);
       }
     }
     resetForm();
@@ -177,15 +144,6 @@ export default function App() {
       const pocket = d.pockets.find((p) => p.id === id);
       return { ...d, cash: d.cash + (Number(pocket?.balance) || 0), pockets: d.pockets.filter((p) => p.id !== id) };
     });
-  }
-  function handleResetAll() {
-    setData((d) => ({
-      cash: 0,
-      pockets: d.pockets.map((p) => ({ ...p, balance: 0 })),
-      transactions: [],
-    }));
-    setConfirmReset(false);
-    setShowSettings(false);
   }
   function deleteTransaction(id) {
     setData((d) => ({ ...d, transactions: d.transactions.filter((tx) => tx.id !== id) }));
@@ -241,10 +199,10 @@ export default function App() {
         {/* Form */}
         <div style={{ ...s.card, marginBottom: 24, display: "block" }}>
           <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-            <button onClick={() => setFormType("masuk")} style={{ ...s.typeBtn, ...(formType === "masuk" ? s.typeBtnActive("#705D40") : s.typeBtnInactive) }}>
+            <button onClick={() => setFormType("masuk")} style={{ ...s.typeBtn, ...(formType === "masuk" ? s.typeBtnActive("#16a34a") : s.typeBtnInactive) }}>
               <IconUp /> Masuk
             </button>
-            <button onClick={() => setFormType("keluar")} style={{ ...s.typeBtn, ...(formType === "keluar" ? s.typeBtnActive("#705D40") : s.typeBtnInactive) }}>
+            <button onClick={() => setFormType("keluar")} style={{ ...s.typeBtn, ...(formType === "keluar" ? s.typeBtnActive("#dc2626") : s.typeBtnInactive) }}>
               <IconDown /> Keluar
             </button>
           </div>
@@ -339,31 +297,6 @@ export default function App() {
               Total: {totalPct}%. {totalPct === 100 ? "Pas, semua pemasukan terbagi habis." : totalPct < 100 ? `Sisa ${100 - totalPct}% masuk ke kas tunai.` : "Melebihi 100%, akan dinormalkan otomatis."}
             </div>
             <button onClick={() => setShowSettings(false)} style={{ ...s.submitBtn, marginTop: 16 }}>Selesai</button>
-
-            <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid #e7e5e4" }}>
-              {!confirmReset ? (
-                <button
-                  onClick={() => setConfirmReset(true)}
-                  style={{ width: "100%", background: "white", color: "#dc2626", border: "1px solid #dc2626", borderRadius: 8, padding: "10px 0", fontSize: 13, fontWeight: 500, cursor: "pointer" }}
-                >
-                  Reset semua data ke Rp0
-                </button>
-              ) : (
-                <div>
-                  <p style={{ fontSize: 12, color: "#dc2626", marginBottom: 8, textAlign: "center" }}>
-                    Yakin? Semua saldo dan riwayat transaksi akan dihapus permanen dan tidak bisa dikembalikan.
-                  </p>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => setConfirmReset(false)} style={{ flex: 1, background: "#f5f5f4", color: "#57534e", border: "none", borderRadius: 8, padding: "10px 0", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
-                      Batal
-                    </button>
-                    <button onClick={handleResetAll} style={{ flex: 1, background: "#dc2626", color: "white", border: "none", borderRadius: 8, padding: "10px 0", fontSize: 13, fontWeight: 500, cursor: "pointer" }}>
-                      Ya, Reset
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       )}
@@ -373,7 +306,7 @@ export default function App() {
 }
 
 const styles = {
-  page: { minHeight: "100vh", background: "#E3D7CA", padding: "0 0 40px" },
+  page: { minHeight: "100vh", background: "#fafaf9", padding: "0 0 40px" },
   container: { maxWidth: 640, margin: "0 auto", padding: "32px 16px" },
   header: { display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24 },
   title: { fontSize: 20, fontWeight: 600, letterSpacing: "-0.02em" },
@@ -386,10 +319,10 @@ const styles = {
   sectionTitle: { fontSize: 13, fontWeight: 500, color: "#44403c" },
   rowBetween: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 },
   input: { border: "1px solid #e7e5e4", borderRadius: 8, padding: "8px 12px", fontSize: 13, outline: "none", background: "white" },
-  typeBtn: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 0", borderRadius: 8, fontSize: 13, fontWeight: 600, border: "none", cursor: "pointer", fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
+  typeBtn: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "8px 0", borderRadius: 8, fontSize: 13, fontWeight: 500, border: "none", cursor: "pointer" },
   typeBtnActive: (color) => ({ background: color, color: "white" }),
   typeBtnInactive: { background: "#f5f5f4", color: "#57534e" },
-  submitBtn: { width: "100%", background: "#705D40", color: "white", border: "none", borderRadius: 8, padding: "10px 0", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" },
+  submitBtn: { width: "100%", background: "#1c1917", color: "white", border: "none", borderRadius: 8, padding: "10px 0", fontSize: 13, fontWeight: 500, cursor: "pointer" },
   txRow: { background: "white", borderRadius: 8, border: "1px solid #e7e5e4", padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between" },
   deleteBtn: { background: "none", border: "none", cursor: "pointer", color: "#a8a29e", padding: 2, display: "flex" },
   addPocketBtn: { width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, border: "1px dashed #d6d3d1", borderRadius: 8, padding: "8px 0", fontSize: 13, color: "#57534e", background: "white", cursor: "pointer" },
